@@ -4,7 +4,7 @@ using Notes.Application;
 using Notes.Persistence;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
-
+using Notes.WebApi.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,16 +30,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen();
 
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
-//    app.UseSwagger();
-//    app.UseSwaggerUI();
-//}
 
 using (var scope = builder.Services.BuildServiceProvider().CreateScope())
 {
@@ -56,6 +47,18 @@ using (var scope = builder.Services.BuildServiceProvider().CreateScope())
 
 }
 
+//builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+//if (app.Environment.IsDevelopment())
+//{
+//    app.UseSwagger();
+//    app.UseSwaggerUI();
+//}
+
+app.UseCustomExceptionHandler();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.UseCors("AllowAll");
