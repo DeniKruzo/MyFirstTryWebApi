@@ -1,10 +1,11 @@
+using System.Reflection;
+using System.IO;
+using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Notes.Application.Common.Mappings;
 using Notes.Application.Interfaces;
 using Notes.Application;
 using Notes.Persistence;
-using System.Reflection;
-using Microsoft.Extensions.Configuration;
 using Notes.WebApi.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -61,16 +62,26 @@ using (var scope = builder.Services.BuildServiceProvider().CreateScope())
 
 }
 
-//builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(config =>
+{
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    config.IncludeXmlComments(xmlPath);
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
-//    app.UseSwagger();
-//    app.UseSwaggerUI();
-//}
+app.UseSwagger();
+app.UseSwaggerUI(config =>
+{
+    config.RoutePrefix = string.Empty;
+    config.SwaggerEndpoint("swagger/v1/swagger.json","Notes API");
+});
+
+if (app.Environment.IsDevelopment())
+{
+    
+}
 
 app.UseCustomExceptionHandler();
 app.UseHttpsRedirection();
