@@ -7,6 +7,10 @@ using Notes.Application.Interfaces;
 using Notes.Application;
 using Notes.Persistence;
 using Notes.WebApi.Middleware;
+using Microsoft.Extensions.Options;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using Notes.WebApi;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,7 +50,6 @@ builder.Services.AddAuthentication(config =>
 
 builder.Services.AddEndpointsApiExplorer();
 
-
 using (var scope = builder.Services.BuildServiceProvider().CreateScope())
 {
     var serviceProvider = scope.ServiceProvider;
@@ -61,21 +64,28 @@ using (var scope = builder.Services.BuildServiceProvider().CreateScope())
     }
 
 }
-
-builder.Services.AddSwaggerGen(config =>
-{
-    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    config.IncludeXmlComments(xmlPath);
-});
+builder.Services.AddVersionedApiExplorer(options =>
+                options.GroupNameFormat = "'v'VVV");
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>
+                                ,ConfigureSwaggerOptions>();
+builder.Services.AddSwaggerGen();
+builder.Services.AddApiVersioning();
 
 var app = builder.Build();
+
+//¬от так можно перейти с 5 на 6 версию, без метода Configure
+var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
 
 app.UseSwagger();
 app.UseSwaggerUI(config =>
 {
-    config.RoutePrefix = string.Empty;
-    config.SwaggerEndpoint("swagger/v1/swagger.json","Notes API");
+    foreach (var description in provider.ApiVersionDescriptions)
+    {
+        config.SwaggerEndpoint(
+            $"/swagger/{description.GroupName}/swagger.json",
+            description.GroupName.ToUpperInvariant());
+        config.RoutePrefix = string.Empty;
+    }
 });
 
 if (app.Environment.IsDevelopment())
@@ -89,6 +99,7 @@ app.UseAuthorization();
 app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseApiVersioning();
 app.MapControllers();
 
 app.Run();
