@@ -1,4 +1,5 @@
 using System.Reflection;
+using System;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -11,8 +12,17 @@ using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Notes.WebApi;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Notes.WebApi.Services;
+using Serilog.Events;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+                .WriteTo.File("NotesWebAppLog-.txt", rollingInterval:
+                    RollingInterval.Day)
+                .CreateLogger();
 
 builder.Services.AddAutoMapper(config =>
 {
@@ -60,7 +70,7 @@ using (var scope = builder.Services.BuildServiceProvider().CreateScope())
     }
     catch (Exception exception)
     {
-
+        Log.Fatal(exception, "An error occurred while app initialization");
     }
 
 }
@@ -70,6 +80,11 @@ builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>
                                 ,ConfigureSwaggerOptions>();
 builder.Services.AddSwaggerGen();
 builder.Services.AddApiVersioning();
+
+//logging
+builder.Services.AddSingleton<ICurrentUserService, CurrentUserService>();
+builder.Services.AddHttpContextAccessor();
+builder.Host.UseSerilog();
 
 var app = builder.Build();
 
@@ -93,6 +108,7 @@ if (app.Environment.IsDevelopment())
     
 }
 
+//app.UseSerilogRequestLogging();
 app.UseCustomExceptionHandler();
 app.UseHttpsRedirection();
 app.UseAuthorization();
